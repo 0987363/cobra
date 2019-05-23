@@ -17,12 +17,14 @@ package cobra
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 
 	flag "github.com/spf13/pflag"
 )
@@ -195,6 +197,9 @@ type Command struct {
 	helpCommand *Command
 	// versionTemplate is the version template defined by user.
 	versionTemplate string
+
+	ctx   context.Context
+	ctxMu sync.RWMutex
 }
 
 // SetArgs sets arguments for the command. It is set to os.Args[1:] by default, if desired, can be overridden
@@ -524,6 +529,20 @@ func isFlagArg(arg string) bool {
 		(len(arg) >= 2 && arg[0] == '-' && arg[1] != '-'))
 }
 
+// Context get the command's current context.
+func (c *Command) Context() context.Context {
+	c.ctxMu.RLock()
+	defer c.ctxMu.RUnlock()
+	return c.ctx
+}
+
+// SetContext sets the command's current context.
+func (c *Command) SetContext(ctx context.Context) {
+	c.ctxMu.Lock()
+	defer c.ctxMu.Unlock()
+	c.ctx = ctx
+}
+
 // Find the target command given the args and command tree
 // Meant to be run on the highest node. Only searches down.
 func (c *Command) Find(args []string) (*Command, []string, error) {
@@ -544,6 +563,7 @@ func (c *Command) Find(args []string) (*Command, []string, error) {
 	}
 
 	commandFound, a := innerfind(c, args)
+	commandFound.SetContext(c.Context())
 	if commandFound.Args == nil {
 		return commandFound, a, legacyArgs(commandFound, stripFlags(a, commandFound))
 	}
@@ -679,6 +699,10 @@ func (c *Command) execute(a []string) (err error) {
 
 	if len(c.Deprecated) > 0 {
 		c.Printf("Command %q is deprecated, %s\n", c.Name(), c.Deprecated)
+	}
+
+	if c.ctx == nil {
+		c.ctx = context.Background()
 	}
 
 	// initialize help and version flag at the last point possible to allow for user
