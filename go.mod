@@ -1,4 +1,4 @@
-module github.com/spf13/cobra
+module github.com/0987363/cobra
 
 go 1.12
 
