@@ -114,7 +114,7 @@ func (p *Project) License() License {
 	return p.license
 }
 
-// Name returns the name of project, e.g. "github.com/spf13/cobra"
+// Name returns the name of project, e.g. "github.com/0987363/cobra"
 func (p Project) Name() string {
 	return p.name
 }
