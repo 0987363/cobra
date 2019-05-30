@@ -537,10 +537,11 @@ func (c *Command) Context() context.Context {
 }
 
 // SetContext sets the command's current context.
-func (c *Command) SetContext(ctx context.Context) {
+func (c *Command) SetContext(ctx context.Context) context.Context {
 	c.ctxMu.Lock()
 	defer c.ctxMu.Unlock()
 	c.ctx = ctx
+	return c.ctx
 }
 
 // Find the target command given the args and command tree
